@@ -1,15 +1,13 @@
 package bitcoinminner;
 
 import java.security.MessageDigest;
-import javax.xml.bind.DatatypeConverter;
-
 public class Minner {
 
-    private static long ver = 2;
-    private static String prev_block = "000000000000000117c80378b8da0e33559b5997f2ad55e2f7d18ec1975b9717";
-    private static String mrkl_root =  "871714dcbae6c8193a2bb9b2a69fe1c0440399f38d94b3a0f1b447275a29978a";
-    private static long time_ = 0x53058b35;
-    private static long bits = 0x19015f53;
+    private static final long ver = 2;
+    private static final String prev_block = "000000000000000117c80378b8da0e33559b5997f2ad55e2f7d18ec1975b9717";
+    private static final String mrkl_root =  "871714dcbae6c8193a2bb9b2a69fe1c0440399f38d94b3a0f1b447275a29978a";
+    private static final long time_ = 0x53058b35;
+    private static final long bits = 0x19015f53;
     
     public static void main(String[] args) {
         //Pack all the bald header data

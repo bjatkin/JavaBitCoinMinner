@@ -1,5 +1,8 @@
 package bitcoinminner;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.security.MessageDigest;
 import java.util.Random;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -12,15 +15,14 @@ public class MultiThreadMinner {
     private static final int NUM_THREADS=Runtime.getRuntime().availableProcessors();
     
     public static void main(String[] args) throws InterruptedException {
-        
         long splitNonce = 0x100000000l/NUM_THREADS;
        
         //Get a new block header object.
-        Header BlockHeader = new BlockChainConnection().GenerateHeader();
-        byte[] Header = BlockHeader.GetHeader();
+        Header BlockHeader = BlockChainConnection.GenerateHeader();
+        byte[] Header = BlockHeader.getHeader();
         
         //Calculate the difficulty
-        byte[] Difficulty = BlockHeader.GetDifficulty();
+        byte[] Difficulty = BlockHeader.getDifficulty();
 
         //Create a syncronizer class to stop all threads upon success
         Syncronizer s = new Syncronizer();
@@ -32,6 +34,32 @@ public class MultiThreadMinner {
             new Thread(minners[c]).start();
             System.out.println("Searching with Thread " +  (c+1));
         }
+    }
+    
+    public static void WriteFile(String fp, String data){
+        BufferedWriter bw = null;
+	FileWriter fw = null;
+
+            try {
+                fw = new FileWriter(fp);
+                bw = new BufferedWriter(fw);
+                bw.write(data);
+                    
+                System.out.println(fp + " Done!");
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                try {
+                    if (bw != null)
+                        bw.close();
+                    
+                    if (fw != null)
+                        fw.close();
+		} catch (IOException ex) {
+                    ex.printStackTrace();
+		}
+            }
     }
 }
 
@@ -84,7 +112,7 @@ class ThreadedMinner implements Runnable {
             HEADER[79] = (byte) ((nonce >> 24) & 0xFF);
             
             //Compute the DoulbeShaw256
-            hash = MiningUtils.DoubleSHA256(HEADER);
+            hash = MiningUtils.doubleSHA256(HEADER);
             
             //Check to see if the hash is small enough
             for(int c = hash.length - 1; c >=0; c--){
@@ -115,7 +143,7 @@ class ThreadedMinner implements Runnable {
 }
 
 class MiningUtils{
-    public static byte[] DoubleSHA256(byte[] base) {  
+    public static byte[] doubleSHA256(byte[] base) {  
         try{
             //We use DigestUtils because it is thread safe
             MessageDigest digest = DigestUtils.getSha256Digest();
@@ -128,7 +156,7 @@ class MiningUtils{
         }
     }
     
-    public static String ByteArrayToString(byte[] b){
+    public static String byteArrayToString(byte[] b){
         StringBuffer hexString = new StringBuffer();
         
         for (int i = 0; i < b.length; i++) {
@@ -140,7 +168,7 @@ class MiningUtils{
         return hexString.toString();
     }
     
-    public static byte[] ReverseByteArray(byte[] array){
+    public static byte[] reverseByteArray(byte[] array){
         byte[] ret = new byte[array.length];
         for(int c = 0; c < array.length; c++){
             ret[array.length - c - 1] = array[c];
@@ -148,7 +176,7 @@ class MiningUtils{
         return ret;
     }
     
-    public static byte[] CalculateDifficulty(int bits){
+    public static byte[] calculateDifficulty(int bits){
             //https://en.bitcoin.it/wiki/Difficulty
             byte one = (byte) (bits & 0xFF);
             byte two = (byte) ((bits >> 8) & 0xFF);
@@ -183,7 +211,7 @@ class MiningUtils{
             return dif;
         }
     
-    public static byte[] CombineByteArrays(byte[]... arrays){
+    public static byte[] combineByteArrays(byte[]... arrays){
         int FinalLen = 0;
         for (byte[] b: arrays){
             FinalLen += b.length;
@@ -199,7 +227,7 @@ class MiningUtils{
         return ret;
     }
     
-    public static byte[] ToByteArray(String hash){
+    public static byte[] toByteArray(String hash){
         if (hash.length() % 16 != 0){
             return null;
         }
@@ -223,7 +251,7 @@ class MiningUtils{
             return ret;
     }
     
-    public static byte[] ToByteArray(long a){
+    public static byte[] toByteArray(long a){
         return new byte[] {
             (byte) (a & 0xFF),
             (byte) ((a >> 8) & 0xFF),
@@ -232,17 +260,17 @@ class MiningUtils{
         };
     }
     
-    public static byte[][] ToDoubleByteArray(String[] StringArray){
+    public static byte[][] toDoubleByteArray(String[] StringArray){
         byte[][] ret = new byte[StringArray.length][StringArray[0].length()];
         int index = 0;
         for (String s : StringArray) {
-            ret[index] = ToByteArray(s); 
+            ret[index] = toByteArray(s); 
             index++;
         }
         return ret;
     }
     
-    public static String GenerateRandomHash(int length){
+    public static String generateRandomHash(int length){
       Random rand = new Random();
       String ReturnVal = "";
       String abc = "abcdef1234567890";
@@ -253,7 +281,7 @@ class MiningUtils{
       return ReturnVal;
     }
     
-    public static byte[][] MergeArrays(byte[][]... ByteArrays){
+    public static byte[][] mergeArrays(byte[][]... ByteArrays){
         int FinalColumnCount = 0;
         for (byte[][] ByteArray : ByteArrays) {
             FinalColumnCount += ByteArray.length;
@@ -269,7 +297,7 @@ class MiningUtils{
         return ret;
     }
     
-    public static String[] MergeArrays(String[] a, String[] b) {
+    public static String[] mergeArrays(String[] a, String[] b) {
         String[] ret = new String[a.length + b.length];
         for(int c = 0; c < ret.length; c++){
             if (c < a.length) {
@@ -294,24 +322,24 @@ class Header {
     private long     DIFFICULTY;
     
     Header(String[] Transactions, String prev_hash, long ver, long nbits, long ntime){
-        VER = MiningUtils.ToByteArray(ver);
-        nBITS = MiningUtils.ToByteArray(nbits);
+        VER = MiningUtils.toByteArray(ver);
+        nBITS = MiningUtils.toByteArray(nbits);
         DIFFICULTY = nbits;
-        nTIME = MiningUtils.ToByteArray(ntime);
-        PREV_HASH = MiningUtils.ToByteArray(prev_hash);
-        TX_HASHES = MiningUtils.ToDoubleByteArray(Transactions);
-        COINBASE = GenerateCoinBaseByte();
-        GenerateMerklBranchAndRoot(MiningUtils.MergeArrays(
+        nTIME = MiningUtils.toByteArray(ntime);
+        PREV_HASH = MiningUtils.toByteArray(prev_hash);
+        TX_HASHES = MiningUtils.toDoubleByteArray(Transactions);
+        COINBASE = generateCoinBaseByte();
+        generateMerklBranchAndRoot(MiningUtils.mergeArrays(
                 new byte[][]{COINBASE},
                 TX_HASHES), 0);
     }
     
-    public void Next(){
-        COINBASE = GenerateCoinBaseByte();
-        GenerateMerklRoot(COINBASE, 0);
+    public void next(){
+        COINBASE = generateCoinBaseByte();
+        generateMerklRoot(COINBASE, 0);
     }
     
-    public byte[] GetDifficulty(){
+    public byte[] getDifficulty(){
             //https://en.bitcoin.it/wiki/Difficulty
             byte one = (byte) (DIFFICULTY & 0xFF);
             byte two = (byte) ((DIFFICULTY >> 8) & 0xFF);
@@ -346,11 +374,11 @@ class Header {
             return dif;
     }
     
-    public byte[] GetHeader(){
-        byte[] Header = MiningUtils.CombineByteArrays(
+    public byte[] getHeader(){
+        byte[] Header = MiningUtils.combineByteArrays(
                 VER,
-                MiningUtils.ReverseByteArray(PREV_HASH),
-                MiningUtils.ReverseByteArray(MRKL_ROOT),
+                MiningUtils.reverseByteArray(PREV_HASH),
+                MiningUtils.reverseByteArray(MRKL_ROOT),
                 nTIME,
                 nBITS,
                 new byte[4]
@@ -358,7 +386,7 @@ class Header {
         return Header;
     }
     
-    private void GenerateMerklBranchAndRoot(byte[][] HashList, int index) {
+    private void generateMerklBranchAndRoot(byte[][] HashList, int index) {
         if (HashList.length == 1){
             MRKL_ROOT = HashList[0];
             return;
@@ -381,36 +409,36 @@ class Header {
 
         for(int i = 0; i < newHashList.length; i++) {
             if (i*2+1 >=  HashList.length){
-                newHashList[i] = MiningUtils.ReverseByteArray(MiningUtils.DoubleSHA256(
-                    MiningUtils.CombineByteArrays(
-                        MiningUtils.ReverseByteArray(HashList[i*2]),
-                        MiningUtils.ReverseByteArray(HashList[i*2])
+                newHashList[i] = MiningUtils.reverseByteArray(MiningUtils.doubleSHA256(
+                    MiningUtils.combineByteArrays(
+                        MiningUtils.reverseByteArray(HashList[i*2]),
+                        MiningUtils.reverseByteArray(HashList[i*2])
                 )));
             } else {
-                newHashList[i] = MiningUtils.ReverseByteArray(MiningUtils.DoubleSHA256(
-                    MiningUtils.CombineByteArrays(
-                        MiningUtils.ReverseByteArray(HashList[i*2]),
-                        MiningUtils.ReverseByteArray(HashList[i*2+1])
+                newHashList[i] = MiningUtils.reverseByteArray(MiningUtils.doubleSHA256(
+                    MiningUtils.combineByteArrays(
+                        MiningUtils.reverseByteArray(HashList[i*2]),
+                        MiningUtils.reverseByteArray(HashList[i*2+1])
                 ))); 
             }
         }
-        GenerateMerklBranchAndRoot(newHashList, index+1);
+        generateMerklBranchAndRoot(newHashList, index+1);
     }
     
-    private void GenerateMerklRoot(byte[] CurrentHash, int index) {
+    private void generateMerklRoot(byte[] CurrentHash, int index) {
         if (index >= MRKL_BRANCH.length) {
             MRKL_ROOT = CurrentHash;
             return;
         }
-        byte[] newHash = MiningUtils.ReverseByteArray(MiningUtils.DoubleSHA256(
-            MiningUtils.CombineByteArrays(
-                MiningUtils.ReverseByteArray(CurrentHash),
-                MiningUtils.ReverseByteArray(MRKL_BRANCH[index])
+        byte[] newHash = MiningUtils.reverseByteArray(MiningUtils.doubleSHA256(
+            MiningUtils.combineByteArrays(
+                MiningUtils.reverseByteArray(CurrentHash),
+                MiningUtils.reverseByteArray(MRKL_BRANCH[index])
             )));
-        GenerateMerklRoot(newHash, index+1);
+        generateMerklRoot(newHash, index+1);
     }
     
-    private byte[] GenerateCoinBaseByte(){
+    private byte[] generateCoinBaseByte(){
         byte[] ret = new byte[32];
         Random rand = new Random();
         rand.nextBytes(ret);
